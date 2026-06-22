@@ -11,7 +11,7 @@ namespace TootTallyMultiplayer.MultiplayerCore
     public static class MultiAudioController
     {
         private static float GetMaxVolume => .2f * GlobalVariables.localsettings.maxvolume_music;
-        private static AudioSource _audioSource;
+        private static AudioSource _audioSource, _soundSource;
         private static AudioClip _defaultAudio;
         private static AudioClip _joinSound, _leaveSound;
         private static bool _isInitialized;
@@ -34,6 +34,9 @@ namespace TootTallyMultiplayer.MultiplayerCore
         {
             if (_isInitialized) return;
 
+            _soundSource = Plugin.Instance.gameObject.AddComponent<AudioSource>();
+            _soundSource.loop = false;
+            _soundSource.volume = GetMaxVolume;
             _audioSource = Plugin.Instance.gameObject.AddComponent<AudioSource>();
             _audioSource.loop = true;
             _volume = GetMaxVolume;
@@ -193,14 +196,14 @@ namespace TootTallyMultiplayer.MultiplayerCore
 
         public static void PlayJoinSound()
         {
-            if (_joinSound == null || _audioSource == null) return;
-            _audioSource.PlayOneShot(_joinSound);
+            if (_joinSound == null || _soundSource == null) return;
+            _soundSource.PlayOneShot(_joinSound);
         }
 
         public static void PlayLeaveSound()
         {
-            if (_leaveSound == null || _audioSource == null) return;
-            _audioSource.PlayOneShot(_leaveSound);
+            if (_leaveSound == null || _soundSource == null) return;
+            _soundSource.PlayOneShot(_leaveSound);
         }
 
         public enum MusicStyle

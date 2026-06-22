@@ -483,7 +483,7 @@ namespace TootTallyMultiplayer
                     _multiController.SendQuitFlag();
                 else
                     _multiController.SendSongFinishedToLobby();
-                _multiController.InitializePointScore();
+                _multiController.InitializePointScore(__instance);
                 UpdateMultiplayerState(MultiplayerController.MultiplayerState.PointScene);
                 __instance.btn_retry_obj.SetActive(false);
                 __instance.btn_nav_cards.SetActive(false);
@@ -567,7 +567,7 @@ namespace TootTallyMultiplayer
                 _multiController.SendQuitFlag();
             }
             else
-                _multiController.SendScoreDataToLobby(__instance.totalscore, __instance.highestcombocounter, (int)__instance.currenthealth, whichtext);
+                _multiController.SendScoreDataToLobby(__instance.totalscore, __instance.highestcombocounter, (int)__instance.currenthealth, whichtext, __instance.notescoreaverage);
         }
 
         private static bool _wasAutotootUsed;

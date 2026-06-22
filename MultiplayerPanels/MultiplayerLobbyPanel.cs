@@ -32,7 +32,7 @@ namespace TootTallyMultiplayer.MultiplayerPanels
         private Dictionary<GameModifiers.Metadata, ModifierButton> _modifierButtonDict = new();
         private Dictionary<int, MultiplayerCard> _userCardsDict;
 
-        private CustomButton _selectSongButton, _startGameButton, _readyUpButton;
+        private CustomButton _selectSongButton, _startGameButton, _readyUpButton, _downloadButton;
         private CustomButton _profileButton, _giveHostButton, _kickButton, _banButton;
 
         private GameObject _lobbySettingButton;
@@ -98,7 +98,8 @@ namespace TootTallyMultiplayer.MultiplayerPanels
 
             _modifiersPopup = GameModifierFactory.CreateModifiersPopup(buttonContainer.transform, Vector2.zero, new Vector2(64, 64), canvas.transform, new Vector2(350, 250), 38, new Vector2(32, 32));
             var hContainer = GameModifierFactory.CreatePopupContainer(_modifiersPopup, new Vector2(0, 130));
-            hContainer.GetComponent<GridLayoutGroup>().cellSize = Vector2.one * 64f;
+            hContainer.transform.parent.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+            hContainer.GetComponent<GridLayoutGroup>().cellSize = Vector2.one * 64f;         
             AddModifierButton(hContainer.transform, GameModifiers.HIDDEN);
             AddModifierButton(hContainer.transform, GameModifiers.FLASHLIGHT);
             AddModifierButton(hContainer.transform, GameModifiers.EASY_MODE);
@@ -233,6 +234,8 @@ namespace TootTallyMultiplayer.MultiplayerPanels
             _startGameButton = GameObjectFactory.CreateCustomButton(buttonContainer.transform, Vector2.zero, new Vector2(170, 65), "Start Game", "StartGameButton", OnStartGameButtonClick);
             _startGameButton.gameObject.SetActive(false);
             _readyUpButton = GameObjectFactory.CreateCustomButton(buttonContainer.transform, Vector2.zero, new Vector2(220, 100), "Ready Up", "ReadyUpButton", OnReadyButtonClick);
+            _downloadButton = GameObjectFactory.CreateCustomButton(buttonContainer.transform, Vector2.zero, new Vector2(220, 100), "Download", "DownloadButton", OnDownloadButtonClick);
+            _downloadButton.gameObject.SetActive(false);    
             _downloadProgressBar = GameObjectFactory.CreateProgressBar(buttonContainer.transform, Vector2.zero, new Vector2(550, 35), false, "DownloadProgressBar");
             //_quickChatPageIndex = 1;
             ResetData();
@@ -365,7 +368,9 @@ namespace TootTallyMultiplayer.MultiplayerPanels
         public void DisplayUserInfo(MultiplayerUserInfo user)
         {
             //Should probably turn this into a prefab.
-            var parsedState = (UserState)Enum.Parse(typeof(UserState), user.state);
+            if (!Enum.TryParse(user.state, false, out UserState parsedState))
+                parsedState = UserState.Unknown;
+
             var userState = user.id == _hostInfo.id ? UserState.Host : parsedState;
 
             if (_userState == UserState.None && IsSelf(user.id))
@@ -459,7 +464,7 @@ namespace TootTallyMultiplayer.MultiplayerPanels
         public void OnSendQuickChatButtonClick(QuickChat chat)
         {
             if (!IsQuickChatOpened || !_canDoQuickChat) return; //Prevent user from sending QuickChat while panel is closing
-            DisableQuickChat(1f);
+            DisableQuickChat(.5f);
             controller.SendQuickChat(chat);
         }
 
@@ -539,10 +544,10 @@ namespace TootTallyMultiplayer.MultiplayerPanels
 
             switch (_userState)
             {
-                case UserState.NoSong:
+                /*case UserState.NoSong:
                     _readyUpButton.gameObject.SetActive(false);
                     controller.DownloadSavedChart(_downloadProgressBar);
-                    break;
+                    break;*/
                 case UserState.NotReady:
                     controller.SendUserState(UserState.Ready);
                     DisableButton(.8f);
@@ -551,8 +556,17 @@ namespace TootTallyMultiplayer.MultiplayerPanels
                     controller.SendUserState(UserState.NotReady);
                     DisableButton(.8f);
                     break;
+                default:
+                    TootTallyNotifManager.DisplayNotif($"Cannot ready up when userstate is {_userState}");
+                    break;
             }
+        }
 
+        public void OnDownloadButtonClick()
+        {
+            if (!_canPressButton || !_isDownloadable || controller.IsDownloadPending) return;
+            _downloadButton.gameObject.SetActive(false);
+            controller.DownloadSavedChart(_downloadProgressBar);
         }
 
         public void SetHostButtonText()
@@ -652,25 +666,30 @@ namespace TootTallyMultiplayer.MultiplayerPanels
             _ratingText.text = $" <b>{difficulty:0.00}</b>";
             _ratedIcon.enabled = isRated;
             _startGameButton.gameObject.SetActive(IsHost && !controller.IsDownloadPending);
+            _downloadButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable);
+            _readyUpButton.gameObject.SetActive(!IsHost);
         }
 
         public void OnSongInfoChanged(MultiplayerSongInfo songInfo) => OnSongInfoChanged(songInfo.songName, songInfo.gameSpeed, songInfo.modifiers, songInfo.difficulty, songInfo.isRated);
 
-        public void SetTrackDataDetails(SingleTrackData trackData)
+        public void SetTrackDataDetails(SingleTrackData trackData, bool isDownloadable = false)
         {
-            _isDownloadable = false;
+            _isDownloadable = isDownloadable;
             _songArtistText.text = $"{trackData.artist}";
             _songDescText.text = $"{trackData.desc}";
-            
+
             if (_savedGameSpeed == 0)
                 _savedGameSpeed = 1;
-            
+
             _bpmText.text = $" <b>{trackData.tempo * _savedGameSpeed}</b>";
             //What the fuck am I doing??
             var time = TimeSpan.FromSeconds(trackData.length / _savedGameSpeed);
             var stringTime = $"{(time.Hours != 0 ? (time.Hours + ":") : "")}{(time.Minutes != 0 ? time.Minutes : "0")}:{(time.Seconds != 0 ? time.Seconds : "00"):00}";
 
             _timeText.text = $" <b>{stringTime}</b>";
+
+            _downloadButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable);
+            _readyUpButton.gameObject.SetActive(!IsHost);
         }
 
         private bool _isDownloadable;
@@ -695,20 +714,28 @@ namespace TootTallyMultiplayer.MultiplayerPanels
             switch (state)
             {
                 case UserState.NoSong:
-                    _readyUpButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable);
-                    _readyUpButton.textHolder.text = "Download Song";
+                    //_readyUpButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable);
+                    //_readyUpButton.textHolder.text = "Download Song";
+                    _readyUpButton.gameObject.SetActive(false);
+                    _downloadButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable);
+                    _downloadButton.textHolder.text = "Download Chart";
                     break;
                 case UserState.NotReady:
                     _readyUpButton.gameObject.SetActive(!IsHost);
                     _readyUpButton.textHolder.text = "Ready Up";
+                    _downloadButton.textHolder.text = "Update Chart";
                     break;
                 case UserState.Ready:
                     _readyUpButton.gameObject.SetActive(!IsHost);
                     _readyUpButton.textHolder.text = "Not Ready";
+                    _downloadButton.textHolder.text = "Update Chart";
                     break;
                 case UserState.Spectating:
-                    _readyUpButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable && !IsHost);
-                    _readyUpButton.textHolder.text = "Download Song";
+                    _readyUpButton.gameObject.SetActive(false);
+                    _downloadButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable);
+                    _downloadButton.textHolder.text = "Download Chart";
+                    //_readyUpButton.gameObject.SetActive(!controller.IsDownloadPending && _isDownloadable && !IsHost);
+                    //_readyUpButton.textHolder.text = "Download Song"; 
                     break;
             }
         }

@@ -8,12 +8,15 @@ namespace TootTallyMultiplayer.MultiplayerCore
     public class MultiplayerLiveScoreController : MonoBehaviour
     {
         private Dictionary<int, MultiplayerLiveScore> _idToLiveScoreDict;
+        public static Dictionary<int, List<float[]>> idToSavedNoteDataDict;
         private bool _isInitialized;
         private float _timer;
 
         public void Awake()
         {
             _idToLiveScoreDict = new Dictionary<int, MultiplayerLiveScore>();
+            idToSavedNoteDataDict ??= new Dictionary<int, List<float[]>>();
+            idToSavedNoteDataDict.Clear();
             _isInitialized = true;
         }
 
@@ -39,7 +42,7 @@ namespace TootTallyMultiplayer.MultiplayerCore
 
         }
 
-        public void UpdateLiveScore(int id, int score, int combo, int health)
+        public void UpdateLiveScore(int id, int score, int combo, int health, int judgement, float accuracy)
         {
             if (!_isInitialized) return;
 
@@ -48,12 +51,15 @@ namespace TootTallyMultiplayer.MultiplayerCore
                 var user = MultiplayerController.GetUserFromLobby(id);
                 if (user.id == 0) return;
 
+
                 var liveScore = MultiplayerGameObjectFactory.CreateLiveScoreCard(gameObject.transform, new Vector2(200, 32 * _idToLiveScoreDict.Count), $"{id}LiveScore").AddComponent<MultiplayerLiveScore>();
                 liveScore.Initialize(id, user.username, this);
                 liveScore.SetIsVisible(Plugin.Instance.ShowLiveScore.Value, false);
                 _idToLiveScoreDict.Add(id, liveScore);
+                idToSavedNoteDataDict.Add(id, new List<float[]>());
             }
             _idToLiveScoreDict[id].UpdateScore(score, combo, health);
+            idToSavedNoteDataDict[id].Add(new float[] { accuracy, combo });
         }
 
 

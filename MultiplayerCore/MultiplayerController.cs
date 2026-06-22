@@ -43,7 +43,7 @@ namespace TootTallyMultiplayer
 
         private MultiplayerPanelBase _currentActivePanel, _lastPanel;
         public bool IsTransitioning;
-        private bool _hasSong;
+        private bool _hasSong, _songNeedUpdate;
         private UserState _currentUserState;
         private static string _savedDownloadLink, _savedTrackRef;
         private string _searchFilter;
@@ -168,9 +168,9 @@ namespace TootTallyMultiplayer
                 _multiConnection.SendUserState(UserState.NotReady);
         }
 
-        public void InitializePointScore()
+        public void InitializePointScore(PointSceneController __instance)
         {
-            GameObject.Find("Canvas/FullPanel").AddComponent<MultiplayerPointScoreController>();
+            GameObject.Find("Canvas/FullPanel").AddComponent<MultiplayerPointScoreController>().Initialize(__instance);
         }
 
         private IEnumerator<WaitForSeconds> DelayDisplayLobbyInfo(float delay, MultiplayerLobbyInfo lobby, Action<MultiplayerLobbyInfo> callback)
@@ -408,7 +408,7 @@ namespace TootTallyMultiplayer
             if (songInfo.trackRef == "")
             {
                 savedSongInfo = songInfo;
-                _multLobbyPanel.SetNullTrackDataDetails(false);
+                _multLobbyPanel?.SetNullTrackDataDetails(false);
                 PlayDefaultSong();
                 return;
             }
@@ -454,7 +454,8 @@ namespace TootTallyMultiplayer
                 SelectSongFromTrackref(optionalTrack.Value.trackref);
                 if (_currentUserState == UserState.NoSong)
                     SendUserState(IsSpectating ? UserState.Spectating : UserState.NotReady);
-                _savedDownloadLink = null;
+                _songNeedUpdate = songInfo.fileHash != SongDataHelper.GetChoosenSongHash(songInfo.trackRef);
+                _savedDownloadLink = _songNeedUpdate ? FileHelper.GetDownloadLinkFromSongData(new SerializableClass.SongDataFromDB { mirror = songInfo.mirror, download = songInfo.download }) : null;
                 _savedTrackRef = "";
             }
             else
@@ -462,9 +463,9 @@ namespace TootTallyMultiplayer
                 _savedDownloadLink = FileHelper.GetDownloadLinkFromSongData(new SerializableClass.SongDataFromDB { mirror = songInfo.mirror, download = songInfo.download });
                 _savedTrackRef = songInfo.trackRef;
                 SendUserState(UserState.NoSong);
-                _multLobbyPanel.SetNullTrackDataDetails(_savedDownloadLink != null);
             }
             savedSongInfo = songInfo;
+            _multLobbyPanel?.SetNullTrackDataDetails(_savedDownloadLink != null);
             UpdateLobbySongDetails();
         }
 
@@ -533,13 +534,13 @@ namespace TootTallyMultiplayer
                 PlayDefaultSong();
 
             savedTrackData = TrackLookup.toTrackData(track.Value);
-            UpdateLobbySongDetails();
             GlobalVariables.levelselect_index = savedTrackData.trackindex;
             GlobalVariables.chosen_track = savedTrackData.trackref;
             GlobalVariables.chosen_track_data = savedTrackData;
             _hasSong = true;
             _savedDownloadLink = null;
             _savedTrackRef = null;
+            UpdateLobbySongDetails();
             Plugin.LogInfo("Selected: " + savedTrackData.trackref);
         }
 
@@ -570,7 +571,7 @@ namespace TootTallyMultiplayer
             if (CurrentInstance == null) return;
 
             if (savedTrackData != null)
-                _multLobbyPanel?.SetTrackDataDetails(savedTrackData);
+                _multLobbyPanel?.SetTrackDataDetails(savedTrackData, _savedDownloadLink != null);
             if (savedSongInfo.trackRef != "")
                 _multLobbyPanel?.OnSongInfoChanged(savedSongInfo);
         }
@@ -736,12 +737,25 @@ namespace TootTallyMultiplayer
                     OnUserInfoReceived(optionInfo.values[0].ToObject<MultiplayerUserInfo>());
                     break;
                 case OptionInfoType.UpdateScore:
-                    //id - score - combo - health
-                    _multiLiveScoreController?.UpdateLiveScore((int)optionInfo.values[0], (int)optionInfo.values[1], (int)optionInfo.values[2], (int)optionInfo.values[3]);
+                    //id - score - combo - health - Judgement - Accuracy
+                    _multiLiveScoreController?.UpdateLiveScore(
+                        (int)optionInfo.values[0],
+                        (int)optionInfo.values[1],
+                        (int)optionInfo.values[2],
+                        (int)optionInfo.values[3],
+                        optionInfo.values.Length >= 5 ? (int)optionInfo.values[4] : 0,
+                        optionInfo.values.Length >= 6 ? (float)optionInfo.values[5] : 0);
                     break;
                 case OptionInfoType.FinalScore:
-                    //id - score - percent - maxcombo - tally
-                    MultiplayerPointScoreController.AddScore((int)optionInfo.values[0], (int)optionInfo.values[1], (float)optionInfo.values[2], (int)optionInfo.values[3], optionInfo.values[4].ToObject<int[]>());
+                    //id - score - percent - maxcombo - grade - tally - modifiers
+                    MultiplayerPointScoreController.AddScore(
+                        (int)optionInfo.values[0],
+                        (int)optionInfo.values[1],
+                        (float)optionInfo.values[2],
+                        (int)optionInfo.values[3],
+                        optionInfo.values[4].ToObject<int[]>(),
+                        optionInfo.values.Length >= 6 ? (string)optionInfo.values[5] : "-",
+                        optionInfo.values.Length >= 7 ? (string)optionInfo.values[6] : null);
                     break;
                 case OptionInfoType.Quit:
                     //id
@@ -770,10 +784,10 @@ namespace TootTallyMultiplayer
             _multiConnection?.SendSongHash(songHash, gamespeed, modifiers);
         }
 
-        public void SendScoreDataToLobby(int score, int combo, int health, int tally)
+        public void SendScoreDataToLobby(int score, int combo, int health, int tally, float accuracy)
         {
-            _multiConnection?.SendUpdateScore(score, combo, health, tally);
-            _multiLiveScoreController?.UpdateLiveScore(TootTallyUser.userInfo.id, score, combo, health);
+            _multiConnection?.SendUpdateScore(score, combo, health, tally, accuracy);
+            _multiLiveScoreController?.UpdateLiveScore(TootTallyUser.userInfo.id, score, combo, health, tally, accuracy);
         }
 
         public void SendUserState(UserState state)

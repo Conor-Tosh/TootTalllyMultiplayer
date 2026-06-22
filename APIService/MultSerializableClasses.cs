@@ -100,6 +100,7 @@ namespace TootTallyMultiplayer.APIService
             Playing,
             Host,
             Spectating,
+            Unknown
         }
 
         public enum LobbyType

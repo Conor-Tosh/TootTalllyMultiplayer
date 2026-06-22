@@ -74,8 +74,8 @@ namespace TootTallyMultiplayer
         public void SendUserState(UserState state) =>
             SendOptionInfo(OptionInfoType.UpdateUserState, new dynamic[] { state.ToString() });
 
-        public void SendUpdateScore(int score, int combo, int health, int tally) =>
-            SendOptionInfo(OptionInfoType.UpdateScore, new dynamic[] { score, combo, health, tally});
+        public void SendUpdateScore(int score, int combo, int health, int tally, float accuracy) =>
+            SendOptionInfo(OptionInfoType.UpdateScore, new dynamic[] { score, combo, health, tally, accuracy });
 
         public void UpdateStacks()
         {
@@ -105,6 +105,12 @@ namespace TootTallyMultiplayer
                 else if (message is SocketLobbyInfo lobbyInfo)
                     _receivedLobbyInfo.Enqueue(lobbyInfo);
             }
+        }
+
+        protected override void OnWebSocketError(object sender, ErrorEventArgs e)
+        {
+            //TODO: Try reconnect maybe?
+            base.OnWebSocketError(sender, e);
         }
 
         protected override void OnWebSocketOpen(object sender, EventArgs e)

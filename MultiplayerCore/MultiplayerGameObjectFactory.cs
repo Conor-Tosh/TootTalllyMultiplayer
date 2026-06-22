@@ -237,7 +237,9 @@ namespace TootTallyMultiplayer
         {
             var customPopup = new CustomPopup("Quick Chat", buttonTransform, Vector2.zero, new Vector2(64, 64), AssetManager.GetSprite("Bubble.png"), popupTransform, new Vector2(720, 700), 38, new Vector2(32, 32));
             var quickChatContainer = customPopup.popupBox.transform.GetChild(0).gameObject;
-            quickChatContainer.GetComponent<VerticalLayoutGroup>().spacing = 0;
+            var vertLayout = quickChatContainer.GetComponent<VerticalLayoutGroup>();
+            vertLayout.spacing = 0;
+            vertLayout.childAlignment = TextAnchor.MiddleCenter;
 
             var normalColor = new Color(.5f, .5f, .5f, .35f);
             var hoverColor = new Color(.6f, .6f, .6f, .5f);

@@ -1,9 +1,13 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using TootTallyAccounts;
 using TootTallyCore.Graphics;
 using TootTallyCore.Graphics.Animations;
+using TootTallyCore.Utils.SoundEffects;
 using TootTallyGameModifiers;
+using TrombLoader.Helpers;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace TootTallyMultiplayer.MultiplayerCore.PointScore
@@ -14,7 +18,9 @@ namespace TootTallyMultiplayer.MultiplayerCore.PointScore
 
         private Image _outlineImage;
 
-        private string _name;
+        private Color _outlineColor, _outlineHoverColor;
+
+        private string _name, _grade, _modifiers;
         private int _id, _score, _maxCombo, _position, _count;
         private float _percent;
         private int[] _noteTally;
@@ -25,27 +31,56 @@ namespace TootTallyMultiplayer.MultiplayerCore.PointScore
 
         public int GetScore => _score;
 
-        public void Initialize(int id, string name, int score, float percent, int maxCombo, int[] noteTally)
+        public void Initialize(int id, string name, int score, float percent, int maxCombo, string grade, int[] noteTally, string modifiers = null, Action<int, string, int, float, string, int[], string> onClick = null)
         {
             _id = id;
             if (_IsSelf)
-                _outlineImage.color = new Color(.95f, .2f, .95f, .5f);
+            {
+                _outlineColor = _outlineImage.color = new Color(.95f, .2f, .95f, .5f);
+                _outlineHoverColor = new Color(.95f, .45f, .95f, .65f);
+            }
             _name = name;
             _score = score;
             _percent = percent;
             _maxCombo = maxCombo;
+            _grade = grade;
             _noteTally = noteTally;
+            _modifiers = modifiers;
 
             _nameText.text = _name;
             _scoreText.text = _score.ToString();
             _percentText.text = $"{_percent:0.00}%";
             _maxComboText.text = $"{_maxCombo}x";
+
+            //events
+            var eventTrigger = gameObject.AddComponent<EventTrigger>();
+
+            EventTrigger.Entry pointerClickEvent = new EventTrigger.Entry();
+            pointerClickEvent.eventID = EventTriggerType.PointerClick;
+            pointerClickEvent.callback.AddListener(data => onClick?.Invoke(_id, _name, _score, _percent, _grade, _noteTally, _modifiers));
+            eventTrigger.triggers.Add(pointerClickEvent);
+
+            EventTrigger.Entry pointerEnterEvent = new EventTrigger.Entry();
+            pointerEnterEvent.eventID = EventTriggerType.PointerEnter;
+            pointerEnterEvent.callback.AddListener(data =>
+            {
+                _outlineImage.color = _outlineHoverColor;
+                SoundEffectsManager.PlayerBtnHover();
+            });
+            eventTrigger.triggers.Add(pointerEnterEvent);
+
+            EventTrigger.Entry pointerLeaveEvent = new EventTrigger.Entry();
+            pointerLeaveEvent.eventID = EventTriggerType.PointerExit;
+            pointerLeaveEvent.callback.AddListener(data => _outlineImage.color = _outlineColor);
+            eventTrigger.triggers.Add(pointerLeaveEvent);
         }
 
         public void Awake()
         {
             var container = transform.GetChild(0);
             _outlineImage = GetComponent<Image>();
+            _outlineColor = _outlineImage.color;
+            _outlineHoverColor = new Color(.65f, .65f, .65f, .75f);           
 
             _positionText = GameObjectFactory.CreateSingleText(container, "Position", "#-");
             _positionText.rectTransform.sizeDelta = new Vector2(18, 0);
