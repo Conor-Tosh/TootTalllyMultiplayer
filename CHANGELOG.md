@@ -1,5 +1,14 @@
 #### Changelog:
 
+`v1.0.17` -> `v1.0.18`
+```diff
++ Added Judgement and Accuracy to LiveScoreData
++ Added a new main menu music that can be changed with arrow keys
++ Added Update Song button for outdated song version
++ Implemented clicking on other people's score will show their score data and performance graph on the pointscene
++ Changed the quickchat cooldown from 1s to 0.5s
+```
+
 `v1.0.15` -> `v1.0.17`
 ```diff
 + Fixed song info not updating correctly
