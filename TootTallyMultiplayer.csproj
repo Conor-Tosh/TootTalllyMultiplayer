@@ -7,8 +7,8 @@
     <Version>1.1.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
-    <TromboneChampDir>E:\SteamLibrary\steamapps\common\TromboneChamp</TromboneChampDir>
-    <TromboneTootDir>C:\Users\Sabz\AppData\Roaming\r2modmanPlus-local\TromboneChamp\profiles\Default</TromboneTootDir>
+		<TromboneChampDir>C:\Program Files (x86)\Steam\steamapps\common\TromboneChamp</TromboneChampDir>
+		<TromboneTootDir>C:\Users\Conor\AppData\Roaming\r2modmanPlus-local\TromboneChamp\profiles\Default</TromboneTootDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -61,19 +61,5 @@
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(TromboneTootDir)\BepInEx\plugins\TootTally-TootTallyMultiplayer" />
     <Copy SourceFiles="@(Assets)" DestinationFolder="$(TromboneTootDir)\BepInEx\plugins\TootTally-TootTallyMultiplayer\Assets" />
     <Copy SourceFiles="@(Music)" DestinationFolder="$(TromboneTootDir)\BepInEx\plugins\TootTally-TootTallyMultiplayer\Music" />
-  </Target>
-
-  <Target Name="ThunderstoreZip" AfterTargets="Build">
-    <Delete Files="$(OutDir)thunderstore" />
-    <Delete Files="$(SolutionDir)$(ProjectName).zip" />
-    <Copy SourceFiles="CHANGELOG.md" DestinationFolder="$(OutDir)thunderstore" />
-    <Copy SourceFiles="icon.png" DestinationFolder="$(OutDir)thunderstore" />
-    <Copy SourceFiles="manifest.json" DestinationFolder="$(OutDir)thunderstore" />
-    <Copy SourceFiles="README.md" DestinationFolder="$(OutDir)thunderstore" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(OutDir)thunderstore/plugins" />
-    <Copy SourceFiles="@(Assets)" DestinationFolder="$(OutDir)thunderstore/plugins/Assets" />
-    <MakeDir Directories="$(OutDir)thunderstore/plugins/Downloads" />
-    <Copy SourceFiles="@(Music)" DestinationFolder="$(OutDir)thunderstore/plugins/Music" />
-    <ZipDirectory DestinationFile="$(SolutionDir)$(ProjectName).zip" SourceDirectory="$(OutDir)thunderstore" />
   </Target>
 </Project>
