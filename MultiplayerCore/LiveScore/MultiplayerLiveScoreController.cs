@@ -33,7 +33,7 @@ namespace TootTallyMultiplayer.MultiplayerCore
                     ordered.ElementAt(i).Value.SetPosition(i + 1, _idToLiveScoreDict.Count);
             }
 
-            if (Input.GetKeyDown(KeyCode.Tab))
+            if (Input.GetMouseButtonDown(3)) // Mouse Button 4
             {
                 Plugin.Instance.ShowLiveScore.Value = !Plugin.Instance.ShowLiveScore.Value;
                 foreach (var liveScore in _idToLiveScoreDict.Values)
